@@ -4,6 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>UzBozor.shop - Xitoy va Jahon Brendlari</title>
+    
+    <!-- ===== FIREBASE SDK ===== -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -23,11 +28,52 @@
                 <a href="#contact">Aloqa</a>
             </nav>
             <div class="header-actions">
-                <a href="#" class="btn btn-outline">🔍</a>
-                <a href="#" class="btn btn-primary">Ro'yxatdan o'tish</a>
+                <!-- ===== AUTH BUTTONS ===== -->
+                <div id="auth-section">
+                    <a href="#" class="btn btn-outline" id="loginBtn">🔑 Kirish</a>
+                    <a href="#" class="btn btn-primary" id="registerBtn">📝 Ro'yxatdan o'tish</a>
+                </div>
+                <div id="user-section" style="display:none;">
+                    <span id="userName" style="margin-right:15px;color:#E31E24;font-weight:600;"></span>
+                    <a href="#" class="btn btn-outline" id="logoutBtn">🚪 Chiqish</a>
+                </div>
             </div>
         </div>
     </header>
+
+    <!-- ========== MODAL (KIRISH) ========== -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeLogin">&times;</span>
+            <h2>🔑 Kirish</h2>
+            <form id="loginForm">
+                <input type="email" id="loginEmail" placeholder="Email" required />
+                <input type="password" id="loginPassword" placeholder="Parol" required />
+                <button type="submit" class="btn btn-primary" style="width:100%;">Kirish</button>
+            </form>
+            <hr />
+            <button id="googleLoginBtn" class="btn" style="width:100%;background:#4285F4;color:#fff;">🔵 Google orqali kirish</button>
+            <p style="margin-top:15px;">Hisobingiz yo'qmi? <a href="#" id="switchToRegister" style="color:#E31E24;font-weight:600;">Ro'yxatdan o'tish</a></p>
+        </div>
+    </div>
+
+    <!-- ========== MODAL (RO'YXATDAN O'TISH) ========== -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeRegister">&times;</span>
+            <h2>📝 Ro'yxatdan o'tish</h2>
+            <form id="registerForm">
+                <input type="text" id="regName" placeholder="Ismingiz" required />
+                <input type="email" id="regEmail" placeholder="Email" required />
+                <input type="password" id="regPassword" placeholder="Parol (6+ belgi)" required minlength="6" />
+                <input type="tel" id="regPhone" placeholder="Telefon (+998901234567)" />
+                <button type="submit" class="btn btn-primary" style="width:100%;">Ro'yxatdan o'tish</button>
+            </form>
+            <hr />
+            <button id="googleRegisterBtn" class="btn" style="width:100%;background:#4285F4;color:#fff;">🔵 Google orqali ro'yxatdan o'tish</button>
+            <p style="margin-top:15px;">Hisobingiz bormi? <a href="#" id="switchToLogin" style="color:#E31E24;font-weight:600;">Kirish</a></p>
+        </div>
+    </div>
 
     <!-- ========== HERO / BANNER ========== -->
     <section id="home" class="hero">
@@ -211,6 +257,141 @@
             <p>Xitoy va jahon brendlari O'zbekistonda</p>
         </div>
     </footer>
+
+    <!-- ========== FIREBASE AUTH SCRIPT ========== -->
+    <script>
+        // ===== FIREBASE CONFIG (O'ZINGIZNIKINI QO'YING!) =====
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",              // ← O'ZGARTIRING
+            authDomain: "uzbozor.firebaseapp.com",
+            projectId: "uzbozor",
+            storageBucket: "uzbozor.firebasestorage.app",
+            messagingSenderId: "YOUR_SENDER_ID", // ← O'ZGARTIRING
+            appId: "YOUR_APP_ID"                 // ← O'ZGARTIRING
+        };
+
+        // Firebase'ni ishga tushirish
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // ===== DOM ELEMENTLAR =====
+        const authSection = document.getElementById('auth-section');
+        const userSection = document.getElementById('user-section');
+        const userName = document.getElementById('userName');
+
+        const loginModal = document.getElementById('loginModal');
+        const registerModal = document.getElementById('registerModal');
+        const closeLogin = document.getElementById('closeLogin');
+        const closeRegister = document.getElementById('closeRegister');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+
+        const switchToRegister = document.getElementById('switchToRegister');
+        const switchToLogin = document.getElementById('switchToLogin');
+
+        // ===== MODAL YOQISH/O'CHIRISH =====
+        loginBtn.onclick = () => loginModal.style.display = 'block';
+        registerBtn.onclick = () => registerModal.style.display = 'block';
+        closeLogin.onclick = () => loginModal.style.display = 'none';
+        closeRegister.onclick = () => registerModal.style.display = 'none';
+        window.onclick = (e) => {
+            if (e.target == loginModal) loginModal.style.display = 'none';
+            if (e.target == registerModal) registerModal.style.display = 'none';
+        };
+
+        switchToRegister.onclick = () => {
+            loginModal.style.display = 'none';
+            registerModal.style.display = 'block';
+        };
+        switchToLogin.onclick = () => {
+            registerModal.style.display = 'none';
+            loginModal.style.display = 'block';
+        };
+
+        // ===== RO'YXATDAN O'TISH (Email) =====
+        document.getElementById('registerForm').onsubmit = (e) => {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const name = document.getElementById('regName').value;
+            const phone = document.getElementById('regPhone').value;
+
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Profilni yangilash
+                    return userCredential.user.updateProfile({
+                        displayName: name,
+                        phoneNumber: phone
+                    });
+                })
+                .then(() => {
+                    alert('✅ Ro\'yxatdan o\'tdingiz!');
+                    registerModal.style.display = 'none';
+                })
+                .catch((error) => {
+                    alert('❌ Xatolik: ' + error.message);
+                });
+        };
+
+        // ===== KIRISH (Email) =====
+        document.getElementById('loginForm').onsubmit = (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            auth.signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    alert('✅ Xush kelibsiz!');
+                    loginModal.style.display = 'none';
+                })
+                .catch((error) => {
+                    alert('❌ Xatolik: ' + error.message);
+                });
+        };
+
+        // ===== GOOGLE ORQALI KIRISH =====
+        function googleLogin() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then(() => {
+                    alert('✅ Google orqali kirdingiz!');
+                    loginModal.style.display = 'none';
+                    registerModal.style.display = 'none';
+                })
+                .catch((error) => {
+                    alert('❌ Xatolik: ' + error.message);
+                });
+        }
+
+        document.getElementById('googleLoginBtn').onclick = googleLogin;
+        document.getElementById('googleRegisterBtn').onclick = googleLogin;
+
+        // ===== CHIQISH =====
+        logoutBtn.onclick = () => {
+            auth.signOut()
+                .then(() => {
+                    alert('🚪 Chiqdingiz!');
+                })
+                .catch((error) => {
+                    alert('❌ Xatolik: ' + error.message);
+                });
+        };
+
+        // ===== FOYDA LANUVCHI HOLATI =====
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // Foydalanuvchi kirdi
+                authSection.style.display = 'none';
+                userSection.style.display = 'flex';
+                userName.textContent = '👤 ' + (user.displayName || user.email);
+            } else {
+                // Foydalanuvchi chiqdi
+                authSection.style.display = 'flex';
+                userSection.style.display = 'none';
+            }
+        });
+    </script>
 
 </body>
 </html>
